@@ -1,0 +1,20 @@
+#board {
+  height: 16;
+}
+
+#column {
+  width: 26;
+}
+
+#promotion_modal {
+  align: center middle;
+  grid-size: 2 2;
+  background: rgba(6, 149, 220, 0.192);
+}
+
+#queen_button, #rook_button, #bishop_button, #knight_button {
+  column-span: 1;
+  width: 8;
+  height: 5;
+}
+
