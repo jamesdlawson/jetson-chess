@@ -1,0 +1,10 @@
+[Event "Jetson Chess Game"]
+[Site "Local"]
+[Date "2025.07.04"]
+[Round "1"]
+[White "Player 1"]
+[Black "Player 2"]
+[Result "0-1"]
+
+1. g4 e5 2. f3 Qh4# 0-1
+

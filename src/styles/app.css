@@ -1,3 +1,11 @@
+#right_column {
+    height: 100%;
+}
+
+#move_list {
+    height: 1fr;
+}
+
 #board {
   height: 16;
 }
@@ -18,3 +26,41 @@
   height: 5;
 }
 
+#game_container {
+    align: center middle;
+}
+
+#checkmate_modal {
+    align: center middle;
+    width: 40;
+    height: 10;
+    background: rgba(6, 149, 220, 0.192);
+    layer: "top";
+}
+
+#checkmate_modal_dialog {
+  align: center middle;
+  width: 40;
+  height: 10;
+  background: rgba(6, 149, 220, 0.192);
+}
+
+#file_modal_dialog {
+  align: center middle;
+  width: 80;
+  height: 25;
+  background: rgba(6, 149, 220, 0.192);
+}
+
+#file_tree {
+    height: 10;
+    margin-bottom: 1;
+}
+
+#file_modal_dialog > Input {
+  margin-bottom: 1;
+}
+
+#fen_input.invalid {
+    border: solid red;
+}

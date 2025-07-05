@@ -1,19 +1,40 @@
-# jetson-chess
+# Jetson Chess
 
-## Running Locally
+A terminal-based chess application built with Python and the Textual framework.
 
-1. clone the repository and open a termial at the root of repo
-2. install venv if it is not installed
-```pip install virtualenv```
+## Running the Application
 
-3. Create the virtual environment
-```Python3.11 -m venv env```
+This project uses `uv` for package management. For more information on `uv`, see the [official documentation](https://astral.sh/docs/uv). To run the application, follow these steps:
 
-4. activate the env if it is not activated yet (this step may need to be repeated every time you start a new terminal)
-```source env/bin/activate```
+1. **Install `uv`**:
+   If you don't have `uv` installed, you can install it with pip:
+   ```bash
+   pip install uv
+   ```
 
-5. Install required packages
-```pip install -r requirements.txt```
+2. **Install dependencies**:
+   ```bash
+   uv sync
+   ```
 
-6. run the chess app
-```python3 src/main.py```
+3. **Run the application**:
+   ```bash
+   uv run src/main.py
+   ```
+
+## Features
+
+*   **Interactive Chess Board**: Play chess in your terminal with a fully interactive board.
+*   **Move History**: View a list of all moves made during the game.
+*   **FEN Support**: Start a game from any FEN string.
+*   **Save and Load Games**: Save your game progress and load it later.
+*   **Debugging Tools**: A debug tab with a rich log for troubleshooting.
+
+## Project Structure
+
+*   `src/`: Contains the main source code for the application.
+*   `src/chess_core/`: Core chess logic and game state management.
+*   `src/chess_widgets/`: Textual widgets for the chess board, move list, and other UI elements.
+*   `src/styles/`: CSS files for styling the application.
+*   `sample_pgns/`: Sample PGN files for testing.
+*   `logs/`: Log files for debugging.

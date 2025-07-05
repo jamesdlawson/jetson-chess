@@ -1,3 +1,4 @@
 .gitignore
 run_docker.sh
 env/
+requirements.txt

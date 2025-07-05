@@ -1,4 +1,3 @@
-
 from threading import Semaphore
 import chess
 from textual import events
@@ -11,50 +10,10 @@ from textual.strip import Strip
 from textual.widget import Widget
 from textual.binding import Binding
 
-from chess_backend import current_board
-from chess_widgets.chess_move import ChessMove
-from chess_widgets.promotion_modal import PromotionModal
-
-class ColumnOffset(Segment):
-    def __new__(cls, width: int, style: Style = None, ):
-        self = super(ColumnOffset, cls).__new__(cls, " "*width)
-        return self
-
-class Rank(Segment):
-    def __new__(cls, rank: int, style: Style = None, ):
-        rank_str = chess.RANK_NAMES[rank] if 0 <= rank < 8 else " "
-
-        self = super(Rank, cls).__new__(cls, rank_str + " ")
-        return self
-
-    # number of characters in a rank segment
-    @classmethod
-    def number_chars(cls) -> int:
-        return 2
-
-class File(Segment):
-    def __new__(cls, file: int, style: Style = None):
-        file_str = chess.FILE_NAMES[file] if 0 <= file < 8 else " "
-
-        self = super(File, cls).__new__(cls, " " + file_str + " ")
-        return self
-
-    # number of characters in a File segment
-    @classmethod
-    def number_chars(cls) -> int:
-        return 3
-
-class Square(Segment):
-    def __new__(cls, piece: chess.Piece | None, style: Style = None):
-        piece_str = piece.unicode_symbol() if piece else " "
-
-        self = super(Square, cls).__new__(cls, f" {piece_str} ", style)
-        return self
-
-    # number of characters in a File segment
-    @classmethod
-    def number_chars(cls) -> int:
-        return 3
+from chess_core.game_state import current_board, game_state
+from chess_core.chess_logic import get_moves_for_square, make_move_to_square
+from chess_widgets.board_segments import ColumnOffset, Rank, File, Square
+from chess_core.game_state import game_state
 
 class ChessBoard(Widget):
 
@@ -80,12 +39,12 @@ class ChessBoard(Widget):
         scrollbar-corner-color: $panel-darken-1;
         scrollbar-size-vertical: 2;
         scrollbar-size-horizontal: 1;
-        link-background:;
+        link-background: transparent;
         link-color: $text;
         link-style: underline;
-        link-hover-background: $accent;
-        link-hover-color: $text;
-        link-hover-style: bold not underline;
+        link-background-hover: $accent;
+        link-color-hover: $text;
+        link-style-hover: bold not underline;
     }
 
     ChessBoard .chessboard--black-square {
@@ -122,16 +81,18 @@ class ChessBoard(Widget):
     }
     """
 
+    
+
     BINDINGS = [
         Binding("up", "move_cursor('up')", "cursor up"),
         Binding("down", "move_cursor('down')", "cursor down"),
         Binding("left", "move_cursor('left')", "cursor left"),
         Binding("right", "move_cursor('right')", "cursor right"),
         Binding("enter", "select_square()", "select square"),
-        Binding("q", "unselect_square(), unselect square")
+        Binding("q", "unselect_square()", "unselect square")
     ]
 
-    hovered_square = var(0)
+    hovered_square = var(chess.square(0, 0))
     selected_square = var(None)
 
     def __init__(self, *args, **kwargs) -> None:
@@ -146,9 +107,6 @@ class ChessBoard(Widget):
         # Needed for key events to work
         self.can_focus = True
 
-    #==========================================================================
-    # Widget functions
-    #==========================================================================
     def watch_hovered_square( self, previous_square: Offset, cursor_square: Offset ) -> None:
         """Called when the cursor square changes."""
         self.refresh()
@@ -223,9 +181,6 @@ class ChessBoard(Widget):
         else:
             return Strip.blank(1)
 
-    #==========================================================================
-    # Chess Helper functions
-    #==========================================================================
     def square_to_segment(self, square: chess.Square) -> Segment:
         with current_board() as board:
             piece = board.piece_at(square)
@@ -252,11 +207,6 @@ class ChessBoard(Widget):
         else:
             return self.get_component_rich_style("chessboard--white-square" if is_white_square else "chessboard--black-square")
 
-    def get_moves_for_square(self, square: chess.Square) -> list[chess.Move]:
-        """Get the moves for a square."""
-        with current_board() as board:
-            return sorted([move.to_square for move in board.legal_moves if move.from_square == square])
-
     def update_hovered_square(self, square: chess.Square) -> None:
         """Update the current square."""
 
@@ -265,18 +215,28 @@ class ChessBoard(Widget):
         else:
             self.hovered_square = square if square in self.moves_for_selected_square else None
 
-        self.moves_for_hovered_square = self.get_moves_for_square(self.hovered_square)
+        with current_board() as board:
+            if board.is_game_over():
+                self.moves_for_hovered_square = []
+            else:
+                self.moves_for_hovered_square = get_moves_for_square(self.hovered_square)
 
     def update_selected_square(self, square: chess.Square) -> None:
+        with current_board() as board:
+            if board.is_game_over():
+                self.selected_square = None
+                self.moves_for_selected_square = []
+                return
+
         if square == self.selected_square:
             self.selected_square = None
             self.moves_for_selected_square = []
         elif square in self.moves_for_selected_square:
-            self.make_move_to_square(square)
+            make_move_to_square(self.app, self.selected_square, square)
             self.selected_square = None
             self.moves_for_selected_square = []
         elif self.selected_square is None:
-            moves = self.get_moves_for_square(square)
+            moves = get_moves_for_square(square)
             if moves: # prevent selecting a square with no moves
                 self.selected_square = square
                 self.moves_for_selected_square = moves
@@ -316,44 +276,3 @@ class ChessBoard(Widget):
             square = self.hovered_square
 
         return square
-
-    def make_move_to_square(self, square: chess.Square) -> None:
-        """Make a move on the board."""
-
-        move = chess.Move(self.selected_square, square)
-
-        with current_board() as board:
-            self.app.query_one("#log").write(board.fen())
-            if self.is_move_promotion(move, board.piece_type_at(move.from_square)):
-                self.make_promotion(move)
-            else:
-                self.app.query_one("#move_list").add_move(ChessMove(move, board.fen()))
-                board.push(move)
-
-    def is_move_promotion(self, move: chess.Move, piece_type: chess.PieceType) -> bool:
-        """Check if a move is a promotion."""
-
-        if piece_type != chess.PAWN:
-            return False
-
-        rank = chess.square_rank(move.to_square)
-        if (rank == 7 or rank == 0):
-            return True
-        else:
-            return False
-
-    def make_promotion(self, move: chess.Move) -> chess.Move:
-        """Get the promotion for a move."""
-
-        def update_move_with_promotion(promotion: chess.Piece) -> None:
-            """Call after the user selects a promotion piece."""
-            move.promotion = promotion
-            with current_board() as board:
-                self.app.query_one("#move_list").add_move(ChessMove(move, board.fen()))
-                board.push(move)
-                self.refresh()
-            pass
-
-        self.app.push_screen(PromotionModal(), update_move_with_promotion)
-
-        return move

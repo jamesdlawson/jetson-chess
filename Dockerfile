@@ -8,6 +8,7 @@ RUN rm -rf stockfish-android-armv8.tar /stockfish
 
 ADD . /jetson-chess
 
-RUN cd jetson-chess && python3 -m pip install -r requirements.txt
+RUN python3 -m pip install uv
+RUN cd jetson-chess && python3 -m uv pip install -p .
 
 CMD ["python3", "/jetson-chess/src/main.py"]
